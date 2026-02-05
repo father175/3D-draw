@@ -123,54 +123,6 @@ bool intersectTriangle(Ray ray, Triangle tri, HitRecord& hit) {
     return false;
 }
 
-// 构建BVH树（递归）
-BVHNode* buildBVH(int start, int end, int depth) {
-    if (end - start <= 0) return nullptr;
-    
-    BVHNode* node = new BVHNode();
-    node->startIndex = start;
-    node->endIndex = end;
-    
-    // 计算当前节点的包围盒
-    node->bbox = computeTriangleAABB(triangles[triangleIndices[start]]);
-    for (int i = start + 1; i < end; i++) {
-        AABB triAABB = computeTriangleAABB(triangles[triangleIndices[i]]);
-        node->bbox = mergeAABB(node->bbox, triAABB);
-    }
-    
-    // 如果三角形数量少或者达到最大深度，创建叶子节点
-    if (end - start <= 5 || depth >= 50) {
-        node->isLeaf = true;
-        node->left = node->right = nullptr;
-        return node;
-    }
-    
-    // 选择最长的轴进行划分
-    double extent[3] = {
-        node->bbox.max[0] - node->bbox.min[0],
-        node->bbox.max[1] - node->bbox.min[1],
-        node->bbox.max[2] - node->bbox.min[2]
-    };
-    
-    int axis = 0;
-    if (extent[1] > extent[axis]) axis = 1;
-    if (extent[2] > extent[axis]) axis = 2;
-    
-    // 按轴排序三角形
-    sort(triangleIndices.begin() + start, triangleIndices.begin() + end,
-         [axis](int a, int b) { return compareTrianglesByAxis(a, b, axis); });
-    
-    // 在中间点分割
-    int mid = start + (end - start) / 2;
-    
-    // 递归构建左右子树
-    node->isLeaf = false;
-    node->left = buildBVH(start, mid, depth + 1);
-    node->right = buildBVH(mid, end, depth + 1);
-    
-    return node;
-}
-
 // AABB与光线相交测试（Slab方法）
 bool intersectAABB(const Ray& ray, const AABB& bbox, double& tMin, double& tMax) {
     tMin = -1e9;
@@ -196,57 +148,4 @@ bool intersectAABB(const Ray& ray, const AABB& bbox, double& tMin, double& tMax)
     }
     
     return tMax > 1e-6; // 确保tMax是正数
-}
-
-// BVH遍历与相交测试
-void intersectBVH(BVHNode* node, const Ray& ray, HitRecord& hit) {
-    if (node == nullptr) return;
-    
-    double tMin, tMax;
-    if (!intersectAABB(ray, node->bbox, tMin, tMax)) {
-        return;
-    }
-    
-    if (tMin > hit.t) {
-        return; // 有更近的相交，无需继续
-    }
-    
-    if (node->isLeaf) {
-        // 叶子节点：测试所有三角形
-        for (int i = node->startIndex; i < node->endIndex; i++) {
-            if(appear[triangleIndices[i]] == 1) 
-                intersectTriangle(ray, triangles[triangleIndices[i]], hit);
-        }
-    } else {
-        // 内部节点：递归测试子节点
-        intersectBVH(node->left, ray, hit);
-        intersectBVH(node->right, ray, hit);
-    }
-}
-
-// 释放BVH内存
-void deleteBVH(BVHNode* node) {
-    if (node == nullptr) return;
-    
-    if (!node->isLeaf) {
-        deleteBVH(node->left);
-        deleteBVH(node->right);
-    }
-    
-    delete node;
-}
-
-// 初始化BVH
-void initBVH() {
-    if (triangleCount == 0) return;
-    
-    // 创建三角形索引数组
-    triangleIndices.resize(triangleCount);
-    for (int i = 0; i < triangleCount; i++) {
-        triangleIndices[i] = i;
-    }
-    
-    // 构建BVH
-    bvhRoot = buildBVH(0, triangleCount, 0);
-    cout << "BVH构建完成，三角形数量: " << triangleCount << endl;
 }
