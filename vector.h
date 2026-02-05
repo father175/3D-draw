@@ -1,4 +1,4 @@
-// vector.h - 三维图形系统核心数据结构与函数声明
+// vector.h - ?????????????????????????
 
 #pragma once
 #include <bits/stdc++.h>
@@ -8,62 +8,62 @@ using namespace std;
 #ifndef VECTOR_H
 #define VECTOR_H
 
-// 窗口尺寸常量
+// ?????糣??
 const int WIDTH = 800;
 const int HEIGHT = 600;
 const double PI = 3.1415926535;
 
-// 三维点结构
+// ??????
 struct Point3D { 
     double x, y, z; 
 };
 
-// 三角形结构（支持纹理映射）
+// ?????ν?????????????
 struct Triangle {
-    Point3D points[3];      // 三个顶点坐标
-    COLORREF color;         // 基础颜色（无纹理时使用）
-    int materialType;       // 材质类型：1-漫反射，2-半透明
-    bool is_image;          // 是否有纹理贴图
-    string image;           // 纹理文件路径
-    double x[3], y[3];      // 纹理坐标 (u, v) 对应每个顶点
+    Point3D points[3];      // ????????????
+    COLORREF color;         // ????????????????????
+    int materialType;       // ?????????1-??????2-?????
+    bool is_image;          // ????????????
+    string image;           // ???????·??
+    double x[3], y[3];      // ???????? (u, v) ??????????
 };
 
-// 光线结构
+// ?????
 struct Ray {
     double origin[3];
     double direction[3];
 };
 
-// 光线命中记录
+// ???????м??
 struct HitRecord {
-    double t;               // 光线参数
-    double position[3];     // 命中点坐标
-    double normal[3];       // 法线向量
-    COLORREF color;         // 表面颜色
-    int materialType;       // 材质类型
-    double tex_u, tex_v;    // 纹理坐标
-    bool hasTexture;        // 是否有纹理
-    string texturePath;     // 纹理路径
-    bool hit = false;       // 是否命中
+    double t;               // ???????
+    double position[3];     // ???е?????
+    double normal[3];       // ????????
+    COLORREF color;         // ???????
+    int materialType;       // ????????
+    double tex_u, tex_v;    // ????????
+    bool hasTexture;        // ?????????
+    string texturePath;     // ????·??
+    bool hit = false;       // ???????
 };
 
-// 相机结构
+// ?????
 struct Camera {
-    double x = 0, y = 1, z = 0;    // 位置
-    double yaw = 0, pitch = 0;     // 偏航角和俯仰角
-    double speed = 1.0;            // 移动速度
-    double sensitivity = 0.008;    // 鼠标灵敏度
+    double x = 0, y = 1, z = 0;    // λ??
+    double yaw = 0, pitch = 0;     // ???????????
+    double speed = 1.0;            // ??????
+    double sensitivity = 0.008;    // ?????????
 };
 
-// 点光源结构
+// ??????
 struct PointLight {
-    double position[3];     // 光源位置
-    double color[3];        // RGB颜色
-    double intensity;       // 强度
-    double radius;          // 光源半径（用于软阴影）
+    double position[3];     // ???λ??
+    double color[3];        // RGB???
+    double intensity;       // ???
+    double radius;          // ??????????????????
 };
 
-// BVH（包围盒层次结构）相关定义
+// BVH????Χ?в?ν?????????
 struct AABB {
     double min[3];
     double max[3];
@@ -85,7 +85,15 @@ struct BVHNode {
     BVHNode() : left(nullptr), right(nullptr), isLeaf(false) {}
 };
 
-// 全局变量声明
+struct TextureData {
+    string filename;
+    int width, height;
+    COLORREF* pixels;   // ???????
+    BYTE* alpha;        // ????????
+    bool loaded;        // ????????
+};
+
+// ??????????
 extern Triangle triangles[1000001];
 extern bitset<1000001> appear;
 extern int triangleCount;
@@ -93,10 +101,9 @@ extern COLORREF flash_screen[WIDTH][HEIGHT];
 extern Camera camera;
 extern PointLight pointLights[10];
 extern int pointLightCount;
-extern BVHNode* bvhRoot;
-extern vector<int> triangleIndices;
+extern vector<TextureData> textureCache;
 
-// 函数声明
+// ????????
 void addTriangleWithNoTexture(Point3D a, Point3D b, Point3D c, 
                              COLORREF color, int matType = 1);
 void addTriangleWithTexture(Point3D a, Point3D b, Point3D c, 
@@ -108,16 +115,14 @@ void addTriangleWithTexture(Point3D a, Point3D b, Point3D c,
 void addPointLight(double x, double y, double z, 
                    double r, double g, double b, 
                    double intensity = 1.0, double radius = 0.0);
-double calculateAttenuation(double distance, double intensity, 
-                          double lightPos[3], double hitPos[3], double lightRadius);
 double dot(double a[3], double b[3]);
 void cross(double a[3], double b[3], double result[3]);
 void subtract(double a[3], double b[3], double result[3]);
 void normalize(double v[3]);
-// vector.cpp - 三维图形系统核心函数实现
+// vector.cpp - ??????????????????
 
 
-// 全局变量定义
+// ??????????
 Triangle triangles[1000001];
 bitset<1000001> appear;
 int triangleCount = 0;
@@ -125,10 +130,10 @@ COLORREF flash_screen[WIDTH][HEIGHT];
 Camera camera;
 PointLight pointLights[10];
 int pointLightCount = 0;
-BVHNode* bvhRoot = nullptr;
 vector<int> triangleIndices;
+int STEP;
 
-// 添加无纹理三角形
+// ????????????????
 void addTriangleWithNoTexture(Point3D a, Point3D b, Point3D c, 
                              COLORREF color, int matType) {
     if (triangleCount >= 1000000) {
@@ -146,7 +151,7 @@ void addTriangleWithNoTexture(Point3D a, Point3D b, Point3D c,
     triangleCount++;
 }
 
-// 添加带纹理的三角形
+// ?????????????????
 void addTriangleWithTexture(Point3D a, Point3D b, Point3D c, 
                            string texturePath, 
                            double u1, double v1,
@@ -172,7 +177,7 @@ void addTriangleWithTexture(Point3D a, Point3D b, Point3D c,
     triangleCount++;
 }
 
-// 添加点光源
+// ???????
 void addPointLight(double x, double y, double z, 
                    double r, double g, double b, 
                    double intensity, double radius) {
@@ -192,26 +197,26 @@ void addPointLight(double x, double y, double z,
     pointLightCount++;
 }
 
-// 向量点积
+// ???????
 double dot(double a[3], double b[3]) {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-// 向量叉积
+// ???????
 void cross(double a[3], double b[3], double result[3]) {
     result[0] = a[1] * b[2] - a[2] * b[1];
     result[1] = a[2] * b[0] - a[0] * b[2];
     result[2] = a[0] * b[1] - a[1] * b[0];
 }
 
-// 向量减法
+// ????????
 void subtract(double a[3], double b[3], double result[3]) {
     result[0] = a[0] - b[0];
     result[1] = a[1] - b[1];
     result[2] = a[2] - b[2];
 }
 
-// 向量归一化
+// ?????????
 void normalize(double v[3]) {
     double length = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
     if (length > 0) {
@@ -220,4 +225,56 @@ void normalize(double v[3]) {
         v[2] /= length;
     }
 }
+// vector.h - 新增TLAS+BLAS相关结构
+
+// BLAS节点（每个物体一个）
+struct BLASNode {
+    AABB bbox;              // 物体局部空间的包围盒
+    BVHNode* triangleBVH;   // 物体内部的三角形BVH
+    int startTriangle;      // 物体包含的三角形起始索引
+    int endTriangle;        // 物体包含的三角形结束索引
+    double transform[16];   // 物体的变换矩阵（4x4，列主序）
+    bool isStatic;          // 是否是静态物体
+    string name;            // 物体名称（可选）
+    
+    BLASNode() : triangleBVH(nullptr), isStatic(true) {
+        // 初始化为单位矩阵
+        for(int i = 0; i < 16; i++) transform[i] = (i % 5 == 0) ? 1.0 : 0.0;
+    }
+};
+
+// TLAS节点（场景管理）
+struct TLASNode {
+    AABB bbox;              // 世界空间的包围盒
+    TLASNode* left;
+    TLASNode* right;
+    BLASNode* blas;         // 如果是叶子节点，指向BLAS
+    int startBlasIndex;     // 起始BLAS索引（非叶子节点）
+    int endBlasIndex;       // 结束BLAS索引（非叶子节点）
+    bool isLeaf;
+    
+    TLASNode() : left(nullptr), right(nullptr), blas(nullptr), isLeaf(false) {}
+};
+
+// 物体实例（用于实例化）
+struct Instance {
+    BLASNode* blas;         // 指向共享的BLAS
+    double transform[16];   // 实例的变换矩阵
+    int instanceId;         // 实例ID
+    bool visible;           // 是否可见
+};
+
+// 新增全局变量
+extern vector<BLASNode*> blasList;          // 所有BLAS列表
+extern TLASNode* tlasRoot;                  // TLAS根节点
+extern vector<Instance> instances;          // 所有实例
+extern vector<int> blasIndices;             // BLAS索引（用于TLAS构建）
+
+// 新增函数声明
+void buildBLAS(BLASNode* blas, int startTri, int endTri);
+void updateBLAS(BLASNode* blas);
+void buildTLAS();
+bool intersectTLAS(const Ray& ray, HitRecord& hit);
+void applyTransform(double point[3], const double transform[16]);
+void applyTransformInverse(double point[3], const double transform[16]);
 #endif // VECTOR_H
